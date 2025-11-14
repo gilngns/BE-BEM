@@ -17,3 +17,11 @@ model Fase {
   createdAt     DateTime @default(now())
   prediksiPanen Float?
 }
+
+model Pencacahan {
+  id           Int      @id @default(autoincrement())
+  tanggalWaktu DateTime
+  totalSampah  Float
+  catatan      String?
+  createdAt    DateTime @default(now())
+}
