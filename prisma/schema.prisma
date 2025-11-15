@@ -1,3 +1,6 @@
+// =============================
+// PRISMA CONFIG
+// =============================
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
@@ -8,20 +11,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Fase {
-  id            Int      @id @default(autoincrement())
-  tanggal       DateTime
-  jumlahMakanan Float
-  jumlahTelur   Int
-  keterangan    String?
-  createdAt     DateTime @default(now())
-  prediksiPanen Float?
+// =============================
+// ENUMS
+// =============================
+enum RW {
+  RW4
+  RW5
 }
 
-model Pencacahan {
-  id           Int      @id @default(autoincrement())
-  tanggalWaktu DateTime
-  totalSampah  Float
+enum JenisFase {
+  PENETASAN
+  PEMBESARAN
+  PANEN
+}
+
+// =============================
+// USER MODEL
+// =============================
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  rw        RW
+  createdAt DateTime  @default(now())
+
+  siklus    Siklus[]
+}
+
+// =============================
+// SIKLUS MODEL
+// =============================
+model Siklus {
+  id           Int       @id @default(autoincrement())
+  tanggalMulai DateTime
+  jumlahTelur  Int
+  mediaTelur   String
   catatan      String?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
+
+  // Relasi ke User
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  // Relasi ke fase-fase
+  fase   Fase[]
+}
+
+
+// =============================
+// FASE MODEL
+// =============================
+model Fase {
+  id            Int        @id @default(autoincrement())
+  jenis         JenisFase
+  tanggal       DateTime
+
+  // Field opsional, tergantung jenis fase
+  jumlahTelur   Int?
+  jumlahMakanan Float?
+  keterangan    String?
+
+  createdAt     DateTime   @default(now())
+
+  // Relasi ke Siklus
+  siklusId Int
+  siklus   Siklus @relation(fields: [siklusId], references: [id])
+
+  // Relasi Prediksi Panen (hanya untuk fase PANEN)
+  prediksiPanen PrediksiPanen?
+}
+
+
+// =============================
+// PREDIKSI PANEN MODEL
+// =============================
+model PrediksiPanen {
+  id              Int      @id @default(autoincrement())
+  hasilGram       Float
+  hasilKg         Float
+  conversionRate  Float
+  conversionLabel String
+
+  roiEstimate     Float
+  estimatedValue  Float
+  feedCost        Float
+  createdAt       DateTime @default(now())
+
+  // Relasi ke Fase
+  faseId Int @unique
+  fase   Fase @relation(fields: [faseId], references: [id])
 }
