@@ -1,8 +1,24 @@
+import express from "express";
+import { register, login, logout } from "../controllers/authController.js";
+import { auth } from "../middleware/auth.js";
+
+const router = express.Router();
+
 /**
  * @swagger
  * tags:
  *   name: Auth
  *   description: API untuk autentikasi user RW
+ */
+
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
  */
 
 /**
@@ -68,14 +84,29 @@
  *         description: Username / password salah
  */
 
-import express from "express";
-import { register, login } from "../controllers/authController.js";
-
-const router = express.Router();
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user (blacklist token)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout berhasil
+ *         content:
+ *           application/json:
+ *             example:
+ *               message: "Logout berhasil"
+ *       400:
+ *         description: Token tidak ada
+ *       401:
+ *         description: Token tidak valid atau sudah logout
+ */
 
 router.post("/register", register);
 router.post("/login", login);
 router.post("/logout", auth, logout);
-
 
 export default router;
