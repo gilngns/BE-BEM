@@ -101,3 +101,9 @@ model PrediksiPanen {
   faseId Int @unique
   fase   Fase @relation(fields: [faseId], references: [id])
 }
+
+model TokenBlacklist {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  createdAt DateTime @default(now())
+}

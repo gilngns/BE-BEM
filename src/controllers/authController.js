@@ -84,3 +84,24 @@ export const login = async (req, res) => {
       res.status(500).json({ message: err.message });
     }
   };  
+
+// ======================== LOGOUT ========================
+
+  export const logout = async (req, res) => {
+    try {
+      const token = req.headers.authorization?.split(" ")[1];
+  
+      if (!token) {
+        return res.status(400).json({ message: "Token tidak ada" });
+      }
+  
+      await prisma.tokenBlacklist.create({
+        data: { token }
+      });
+  
+      res.json({ message: "Logout berhasil" });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  };
+  
