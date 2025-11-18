@@ -11,7 +11,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5001",
+        url: "https://api.smartmaggot.my.id",
       },
     ],
     components: {
