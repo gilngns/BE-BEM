@@ -1,5 +1,6 @@
 import express from "express";
-import { createSiklus, getAllSiklus, getDetailSiklus } from "../controllers/siklusController.js";
+import { createSiklus, getAllSiklus, getDetailSiklus, getPrediksiBySiklus } from "../controllers/siklusController.js";
+import { authMiddleware } from "../authMiddleware.js";
 
 const router = express.Router();
 
@@ -77,6 +78,26 @@ const router = express.Router();
  *       200:
  *         description: Detail siklus ditemukan
  */
+
+/**
+ * @swagger
+ * /api/prediksi/siklus/{siklusId}:
+ *   get:
+ *     summary: Ambil semua hasil prediksi milik satu siklus
+ *     tags: [Prediksi]
+ *     parameters:
+ *       - in: path
+ *         name: siklusId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List prediksi berhasil diambil
+ */
+router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
 
 router.post("/", createSiklus);
 router.get("/", getAllSiklus);
