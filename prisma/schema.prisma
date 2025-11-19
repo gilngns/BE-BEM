@@ -36,6 +36,8 @@ model User {
   createdAt DateTime  @default(now())
 
   siklus    Siklus[]
+  pencacahan pencacahan[]
+  notifikasi Notifikasi[]
 }
 
 // =============================
@@ -117,4 +119,20 @@ model pencacahan {
   createdAt    DateTime @default(now())
 
   user         User     @relation(fields: [userId], references: [id])
+}
+
+// ================================
+// NOTIFIKASI MODEL
+// ================================
+model Notifikasi {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  type      String      // info, warning, success
+  createdAt DateTime    @default(now())
+  isRead    Boolean     @default(false)
+
+  // Relasi ke User
+  user      User        @relation(fields: [userId], references: [id])
 }
