@@ -3,6 +3,7 @@ import {
   getPrediksiBySiklus, 
   getTotalPrediksi 
 } from "../controllers/prediksiController.js";
+import { getWadahAktif } from "../controllers/prediksiController.js";
 import { authMiddleware } from "../authMiddleware.js";
 
 const router = express.Router();
@@ -64,6 +65,19 @@ router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
  *                   type: integer
  *                   example: 4
  */
+/**
+ * @swagger
+ * /api/prediksi/wadah-aktif:
+ *   get:
+ *     summary: Mengambil jumlah wadah yang masih aktif (fase terakhir = PENDEWASAAN)
+ *     tags: [Prediksi]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Jumlah wadah aktif berhasil dihitung
+ */
+router.get("/wadah-aktif", authMiddleware, getWadahAktif);
 router.get("/total", authMiddleware, getTotalPrediksi);
 
 export default router;

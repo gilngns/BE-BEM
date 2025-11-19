@@ -95,3 +95,39 @@ export const getTotalPrediksi = async (req, res) => {
     }
   };
   
+
+  export const getWadahAktif = async (req, res) => {
+    try {
+      const userId = req.user.id;
+  
+      // Ambil semua siklus + semua fase
+      const siklus = await prisma.siklus.findMany({
+        where: { userId },
+        include: {
+          fase: {
+            orderBy: { tanggal: "asc" }
+          }
+        }
+      });
+  
+      // Hitung wadah aktif (fase terakhir = PENDEWASAAN)
+      let wadahAktif = 0;
+  
+      siklus.forEach(s => {
+        const last = s.fase[s.fase.length - 1];
+        if (last && last.jenis === "PENDEWASAAN") {
+          wadahAktif++;
+        }
+      });
+  
+      return res.json({
+        success: true,
+        wadahAktif
+      });
+  
+    } catch (err) {
+      console.error("getWadahAktif:", err);
+      res.status(500).json({ success: false, message: "Internal server error" });
+    }
+  };
+  
