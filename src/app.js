@@ -8,6 +8,7 @@ import pencacahanRoutes from "./routes/pencacahanRoutes.js";
 import siklusRoutes from "./routes/siklusRoutes.js";
 import faseRoutes from "./routes/faseRoutes.js";
 import { authMiddleware } from "./authMiddleware.js";
+import notifikasiRoutes from "./routes/notifikasiRoutes.js";
 
 dotenv.config();
 
@@ -20,6 +21,7 @@ app.use("/api/prediksi", prediksiRoutes);
 app.use("/api/pencacahan", pencacahanRoutes);
 app.use("/api/siklus", authMiddleware, siklusRoutes);
 app.use("/api/siklus", authMiddleware, faseRoutes);
+app.use("/api/notifikasi", authMiddleware, notifikasiRoutes);
 app.use("/api-docs", swaggerUiServe, swaggerUiSetup);
 
 export default app;
