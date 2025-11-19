@@ -47,3 +47,51 @@ export const getPrediksiBySiklus = async (req, res) => {
     });
   }
 };
+
+export const getTotalPrediksi = async (req, res) => {
+    try {
+      const userId = req.user.id;
+  
+      // Ambil semua prediksi via join ke fase -> siklus
+      const prediksi = await prisma.prediksiPanen.findMany({
+        where: {
+          fase: {
+            siklus: {
+              userId: userId
+            }
+          }
+        },
+        select: {
+          hasilGram: true,
+          hasilKg: true
+        }
+      });
+  
+      if (prediksi.length === 0) {
+        return res.json({
+          success: true,
+          totalKg: 0,
+          totalGram: 0,
+          jumlahPrediksi: 0
+        });
+      }
+  
+      const totalKg = prediksi.reduce((t, p) => t + (p.hasilKg || 0), 0);
+      const totalGram = prediksi.reduce((t, p) => t + (p.hasilGram || 0), 0);
+  
+      return res.json({
+        success: true,
+        totalKg: Number(totalKg.toFixed(3)),
+        totalGram: Math.round(totalGram),
+        jumlahPrediksi: prediksi.length
+      });
+  
+    } catch (err) {
+      console.error("getTotalPrediksi:", err);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  };
+  
