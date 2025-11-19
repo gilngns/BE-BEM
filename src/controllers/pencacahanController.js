@@ -1,11 +1,11 @@
 import prisma from "../lib/prisma.js";
+import { createNotifikasi } from "./notifikasiController.js";
 
 // CREATE
 export const createPencacahan = async (req, res) => {
   try {
-    const { tanggalWaktu, totalSampah, catatan } = req.body;
-
     const userId = req.user.id;
+    const { tanggalWaktu, totalSampah, catatan } = req.body;
 
     const data = await prisma.pencacahan.create({
       data: {
@@ -15,6 +15,14 @@ export const createPencacahan = async (req, res) => {
         userId,
       },
     });
+
+    // === NOTIFIKASI ===
+    await createNotifikasi(
+      userId,
+      "Pencacahan Baru",
+      `Total sampah ${totalSampah} gram berhasil dicatat.`,
+      "info"
+    );
 
     res.json({ message: "Data pencacahan berhasil dibuat", data });
   } catch (err) {

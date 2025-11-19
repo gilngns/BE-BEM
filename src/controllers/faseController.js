@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma.js";
 import axios from "axios";
+import { createNotifikasi } from "./notifikasiController.js";
 
 function parseRupiah(str) {
   if (!str) return 0;
@@ -26,14 +27,25 @@ export const tambahFase = async (req, res) => {
       }
     });
 
+    // === NOTIF FASE APAPUN ===
+    await createNotifikasi(
+      userId,
+      `Fase ${jenis} Ditambahkan`,
+      `Fase ${jenis} berhasil ditambahkan ke siklus ${siklusId}.`,
+      "info"
+    );
+
+    // Jika bukan PANEN → return langsung
     if (jenis !== "PANEN") {
       return res.json({ success: true, data: fase });
     }
 
+    // Validasi panen
     if (!jumlahTelur || !jumlahMakanan) {
       return res.status(400).json({ message: "Data panen tidak lengkap" });
     }
 
+    // Request ML
     const ml = await axios.post(process.env.ML_API_URL, {
       jumlah_telur_gram: Number(jumlahTelur),
       makanan_gram: Number(jumlahMakanan)
@@ -55,12 +67,21 @@ export const tambahFase = async (req, res) => {
       }
     });
 
+    // === NOTIFIKASI PREDIKSI BERHASIL ===
+    await createNotifikasi(
+      userId,
+      "Prediksi Panen Berhasil",
+      `Prediksi panen untuk siklus ${siklusId} berhasil dibuat.`,
+      "success"
+    );
+
     res.json({ success: true, data: { fase, prediksiPanen } });
   } catch (err) {
     console.error("tambahFase:", err);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 export const getFase = async (req, res) => {
   try {
