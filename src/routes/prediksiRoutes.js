@@ -1,8 +1,18 @@
 import express from "express";
-import { getPrediksiBySiklus } from "../controllers/prediksiController.js";
+import { 
+  getPrediksiBySiklus, 
+  getTotalPrediksi 
+} from "../controllers/prediksiController.js";
 import { authMiddleware } from "../authMiddleware.js";
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Prediksi
+ *   description: API untuk hasil prediksi panen maggot
+ */
 
 /**
  * @swagger
@@ -23,5 +33,37 @@ const router = express.Router();
  *         description: List prediksi berhasil diambil
  */
 router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
+
+
+/**
+ * @swagger
+ * /api/prediksi/total:
+ *   get:
+ *     summary: Mengambil total hasil prediksi (KG & Gram) dari semua siklus milik user
+ *     tags: [Prediksi]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Total prediksi berhasil dihitung
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 totalKg:
+ *                   type: number
+ *                   example: 12.54
+ *                 totalGram:
+ *                   type: number
+ *                   example: 12540
+ *                 jumlahPrediksi:
+ *                   type: integer
+ *                   example: 4
+ */
+router.get("/total", authMiddleware, getTotalPrediksi);
 
 export default router;
