@@ -20,30 +20,6 @@ export const getNotifikasi = async (req, res) => {
 };
 
 // -------------------------
-// POST: Buat notifikasi baru
-// -------------------------
-export const createNotifikasi = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { title, message, type } = req.body;
-
-    const notif = await prisma.notifikasi.create({
-      data: {
-        userId,
-        title,
-        message,
-        type: type || "info"
-      }
-    });
-
-    res.json({ success: true, data: notif });
-  } catch (err) {
-    console.error("createNotifikasi:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
-};
-
-// -------------------------
 // PATCH: Tandai sebagai dibaca
 // -------------------------
 export const readNotifikasi = async (req, res) => {
@@ -52,10 +28,7 @@ export const readNotifikasi = async (req, res) => {
     const id = Number(req.params.id);
 
     const notif = await prisma.notifikasi.updateMany({
-      where: {
-        id,
-        userId
-      },
+      where: { id, userId },
       data: { isRead: true }
     });
 
@@ -74,7 +47,9 @@ export const deleteNotifikasi = async (req, res) => {
     const userId = req.user.id;
     const id = Number(req.params.id);
 
-    await prisma.notifikasi.deleteMany({ where: { id, userId } });
+    await prisma.notifikasi.deleteMany({
+      where: { id, userId }
+    });
 
     res.json({ success: true, message: "Notifikasi dihapus" });
   } catch (err) {
