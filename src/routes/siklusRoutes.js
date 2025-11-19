@@ -79,25 +79,7 @@ const router = express.Router();
  *         description: Detail siklus ditemukan
  */
 
-/**
- * @swagger
- * /api/prediksi/siklus/{siklusId}:
- *   get:
- *     summary: Ambil semua hasil prediksi milik satu siklus
- *     tags: [Prediksi]
- *     parameters:
- *       - in: path
- *         name: siklusId
- *         required: true
- *         schema:
- *           type: integer
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List prediksi berhasil diambil
- */
-router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
+
 
 router.post("/", createSiklus);
 router.get("/", getAllSiklus);
