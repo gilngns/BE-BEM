@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma.js";
+import { createNotifikasi } from "./notifikasiController.js";
 
 export const createSiklus = async (req, res) => {
   try {
@@ -14,6 +15,15 @@ export const createSiklus = async (req, res) => {
         userId
       }
     });
+
+    // === NOTIFIKASI ===
+    await createNotifikasi(
+      userId,
+      "Siklus Baru Dibuat",
+      `Siklus baru dimulai dengan ${jumlahTelur} telur.`,
+      "success"
+    );
+
     res.json({ success: true, data: siklus });
   } catch (err) {
     console.error("createSiklus:", err);
