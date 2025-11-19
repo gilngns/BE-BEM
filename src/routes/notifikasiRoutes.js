@@ -1,7 +1,6 @@
 import express from "express";
 import {
   getNotifikasi,
-  createNotifikasi,
   readNotifikasi,
   deleteNotifikasi
 } from "../controllers/notifikasiController.js";
@@ -23,15 +22,6 @@ const router = express.Router();
  *     tags: [Notifikasi]
  */
 router.get("/", getNotifikasi);
-
-/**
- * @swagger
- * /api/notifikasi:
- *   post:
- *     summary: Membuat notifikasi baru
- *     tags: [Notifikasi]
- */
-router.post("/", createNotifikasi);
 
 /**
  * @swagger
