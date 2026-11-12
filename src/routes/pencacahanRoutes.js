@@ -19,9 +19,11 @@
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [totalSampah]
  *             properties:
  *               tanggalWaktu:
  *                 type: string
+ *                 description: Opsional, default waktu sekarang
  *                 example: "2025-11-14T10:00:00Z"
  *               totalSampah:
  *                 type: number
@@ -38,7 +40,7 @@
  * @swagger
  * /api/pencacahan:
  *   get:
- *     summary: Ambil semua pencacahan
+ *     summary: Ambil semua pencacahan milik user yang login
  *     tags: [Pencacahan]
  *     security:
  *       - bearerAuth: []
@@ -135,11 +137,12 @@ import {
   updatePencacahan,
   deletePencacahan,
 } from "../controllers/pencacahanController.js";
-import { authMiddleware } from "../authMiddleware.js";
 
 const router = Router();
 
-router.post("/", authMiddleware, createPencacahan);
+// Semua route dilindungi authMiddleware (dipasang di app.js),
+// dan hanya bisa mengakses data milik user yang login.
+router.post("/", createPencacahan);
 router.get("/", getAllPencacahan);
 router.get("/:id", getPencacahanById);
 router.put("/:id", updatePencacahan);

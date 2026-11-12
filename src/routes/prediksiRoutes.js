@@ -1,10 +1,11 @@
 import express from "express";
-import { 
-  getPrediksiBySiklus, 
-  getTotalPrediksi 
+import {
+  getPrediksiBySiklus,
+  getTotalPrediksi,
+  getWadahAktif,
 } from "../controllers/prediksiController.js";
-import { getWadahAktif } from "../controllers/prediksiController.js";
-import { authMiddleware } from "../authMiddleware.js";
+
+// Semua route dilindungi authMiddleware (dipasang di app.js)
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const router = express.Router();
  *       200:
  *         description: List prediksi berhasil diambil
  */
-router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
+router.get("/siklus/:siklusId", getPrediksiBySiklus);
 
 
 /**
@@ -69,7 +70,7 @@ router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
  * @swagger
  * /api/prediksi/wadah-aktif:
  *   get:
- *     summary: Mengambil jumlah wadah yang masih aktif (fase terakhir = PENDEWASAAN)
+ *     summary: Mengambil jumlah wadah yang masih aktif (fase terakhir siklus = PEMBESARAN)
  *     tags: [Prediksi]
  *     security:
  *       - bearerAuth: []
@@ -77,7 +78,7 @@ router.get("/siklus/:siklusId", authMiddleware, getPrediksiBySiklus);
  *       200:
  *         description: Jumlah wadah aktif berhasil dihitung
  */
-router.get("/wadah-aktif", authMiddleware, getWadahAktif);
-router.get("/total", authMiddleware, getTotalPrediksi);
+router.get("/wadah-aktif", getWadahAktif);
+router.get("/total", getTotalPrediksi);
 
 export default router;

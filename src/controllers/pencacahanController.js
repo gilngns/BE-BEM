@@ -1,104 +1,84 @@
 import prisma from "../lib/prisma.js";
 import { createNotifikasi } from "./notifikasiController.js";
+import { badRequest, getBody, notFound, parseDate, parseId, parseNumber, parseString } from "../lib/validate.js";
+
+// Semua query dibatasi ke data milik user yang login (userId dari token).
 
 // CREATE
 export const createPencacahan = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { tanggalWaktu, totalSampah, catatan } = req.body;
+  const userId = req.user.id;
+  const body = getBody(req);
 
-    const data = await prisma.pencacahan.create({
-      data: {
-        tanggalWaktu,
-        totalSampah,
-        catatan,
-        userId,
-      },
-    });
+  // tanggalWaktu opsional -> default waktu sekarang
+  const tanggalWaktu =
+    parseDate(body.tanggalWaktu, "tanggalWaktu", { optional: true }) ?? new Date();
+  const totalSampah = parseNumber(body.totalSampah, "totalSampah");
+  const catatan = parseString(body.catatan, "catatan", { optional: true, maxLength: 1000 });
 
-    // === NOTIFIKASI ===
-    await createNotifikasi(
-      userId,
-      "Pencacahan Baru",
-      `Total sampah ${totalSampah} gram berhasil dicatat.`,
-      "info"
-    );
+  const data = await prisma.pencacahan.create({
+    data: { tanggalWaktu, totalSampah, catatan: catatan ?? null, userId },
+  });
 
-    res.json({ message: "Data pencacahan berhasil dibuat", data });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
+  await createNotifikasi(
+    userId,
+    "Pencacahan Baru",
+    `Total sampah ${totalSampah} gram berhasil dicatat.`,
+    "info"
+  );
+
+  res.json({ success: true, status: "success", message: "Data pencacahan berhasil dibuat", data });
 };
 
-// GET ALL
+// GET ALL (milik user)
 export const getAllPencacahan = async (req, res) => {
-  try {
-    const data = await prisma.pencacahan.findMany({
-      orderBy: { id: "desc" },
-    });
+  const data = await prisma.pencacahan.findMany({
+    where: { userId: req.user.id },
+    orderBy: { id: "desc" },
+  });
 
-    res.json({ status: "success", data });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ success: true, status: "success", data });
 };
 
 // GET BY ID
 export const getPencacahanById = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const id = parseId(req.params.id);
 
-    const data = await prisma.pencacahan.findUnique({
-      where: { id: Number(id) },
-    });
+  const data = await prisma.pencacahan.findFirst({ where: { id, userId: req.user.id } });
+  if (!data) throw notFound();
 
-    if (!data) return res.status(404).json({ error: "Data tidak ditemukan" });
-
-    res.json({ status: "success", data });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ success: true, status: "success", data });
 };
 
-// UPDATE
+// UPDATE (hanya field yang dikirim yang diubah)
 export const updatePencacahan = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { tanggalWaktu, totalSampah, catatan } = req.body;
+  const id = parseId(req.params.id);
+  const body = getBody(req);
 
-    const data = await prisma.pencacahan.update({
-      where: { id: Number(id) },
-      data: {
-        tanggalWaktu: tanggalWaktu ? new Date(tanggalWaktu) : undefined,
-        totalSampah: totalSampah ? parseFloat(totalSampah) : undefined,
-        catatan,
-      },
-    });
+  const tanggalWaktu = parseDate(body.tanggalWaktu, "tanggalWaktu", { optional: true, nullable: false });
+  const totalSampah = parseNumber(body.totalSampah, "totalSampah", { optional: true, nullable: false });
+  const catatan = parseString(body.catatan, "catatan", { optional: true, maxLength: 1000 });
 
-    res.json({
-      status: "success",
-      message: "Data berhasil diperbarui",
-      data,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (tanggalWaktu === undefined && totalSampah === undefined && catatan === undefined) {
+    throw badRequest("Tidak ada data yang diubah");
   }
+
+  const existing = await prisma.pencacahan.findFirst({ where: { id, userId: req.user.id } });
+  if (!existing) throw notFound();
+
+  const data = await prisma.pencacahan.update({
+    where: { id },
+    data: { tanggalWaktu, totalSampah, catatan },
+  });
+
+  res.json({ success: true, status: "success", message: "Data berhasil diperbarui", data });
 };
 
 // DELETE
 export const deletePencacahan = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const id = parseId(req.params.id);
 
-    await prisma.pencacahan.delete({
-      where: { id: Number(id) },
-    });
+  const result = await prisma.pencacahan.deleteMany({ where: { id, userId: req.user.id } });
+  if (result.count === 0) throw notFound();
 
-    res.json({
-      status: "success",
-      message: "Data berhasil dihapus",
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.json({ success: true, status: "success", message: "Data berhasil dihapus" });
 };
