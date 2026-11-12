@@ -3,13 +3,14 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { swaggerUiServe, swaggerUiSetup } from "./swagger.js";
+import { swaggerSpec, swaggerUiServe, swaggerUiSetup } from "./swagger.js";
 import authRoutes from "./routes/authRoutes.js";
 import prediksiRoutes from "./routes/prediksiRoutes.js";
 import pencacahanRoutes from "./routes/pencacahanRoutes.js";
 import siklusRoutes from "./routes/siklusRoutes.js";
 import faseRoutes from "./routes/faseRoutes.js";
 import notifikasiRoutes from "./routes/notifikasiRoutes.js";
+import chatbotRoutes from "./routes/chatbotRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { HttpError } from "./lib/validate.js";
 
@@ -35,6 +36,8 @@ app.use(cors(corsOrigins.length ? { origin: corsOrigins } : undefined));
 // ---------- Swagger ----------
 // Dipasang sebelum helmet karena Swagger UI butuh CSP yang lebih longgar.
 if (process.env.DISABLE_SWAGGER !== "true") {
+  // Spec mentah (OpenAPI JSON) untuk import ke Postman / generator client Android
+  app.get("/api-docs.json", (req, res) => res.json(swaggerSpec));
   app.use("/api-docs", swaggerUiServe, swaggerUiSetup);
 }
 
@@ -75,6 +78,16 @@ app.use("/api/prediksi", authMiddleware, prediksiRoutes);
 app.use("/api/pencacahan", authMiddleware, pencacahanRoutes);
 app.use("/api/siklus", authMiddleware, siklusRoutes, faseRoutes);
 app.use("/api/notifikasi", authMiddleware, notifikasiRoutes);
+
+// Chatbot AI: 20 pertanyaan / menit / user (memanggil LLM berbayar)
+const chatbotLimiter = rateLimit({
+  ...limiterOptions,
+  windowMs: 60 * 1000,
+  limit: 20,
+  keyGenerator: (req) => `user:${req.user.id}`,
+  message: { success: false, message: "Terlalu banyak pertanyaan, tunggu sebentar lalu coba lagi" },
+});
+app.use("/api/chatbot", authMiddleware, chatbotLimiter, chatbotRoutes);
 
 // ---------- 404 ----------
 app.use((req, res) => {
