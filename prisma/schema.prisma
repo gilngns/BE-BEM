@@ -97,6 +97,7 @@ model PrediksiPanen {
   roiEstimate     Float
   estimatedValue  Float
   feedCost        Float
+  rekomendasi     String[] @default([])   // saran dari model AI
   createdAt       DateTime @default(now())
 
   // Relasi ke Fase

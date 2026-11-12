@@ -1,74 +1,11 @@
-import axios from "axios";
 import prisma from "../lib/prisma.js";
+import { predictPanen } from "../lib/aiClient.js";
 import { createNotifikasi } from "./notifikasiController.js";
 import {
-  getBody, HttpError, notFound, parseDate, parseEnum, parseId, parseNumber, parseString,
+  getBody, notFound, parseDate, parseEnum, parseId, parseNumber, parseString,
 } from "../lib/validate.js";
 
 export const JENIS_FASE = ["PENETASAN", "PEMBESARAN", "PANEN"];
-
-const ML_TIMEOUT_MS = Number(process.env.ML_TIMEOUT_MS) || 15000;
-
-// "Rp 25.000" -> 25000, angka biasa dibiarkan
-function parseRupiah(value) {
-  if (typeof value === "number") return value;
-  if (typeof value !== "string") return 0;
-  const digits = value.replace(/[^0-9]/g, "");
-  return digits ? Number(digits) : 0;
-}
-
-// Terima number atau string angka ("12.5", "35%")
-function toNumber(value) {
-  if (typeof value === "number") return value;
-  if (typeof value === "string") return Number(value.replace(/[^0-9.\-]/g, ""));
-  return NaN;
-}
-
-const mlUnavailable = () =>
-  new HttpError(503, "Layanan prediksi sedang tidak tersedia, coba lagi nanti");
-
-async function requestPrediksi(jumlahTelur, jumlahMakanan) {
-  const url = process.env.ML_API_URL || process.env.AI_API_URL;
-  if (!url) {
-    console.error("ML_API_URL belum diset");
-    throw mlUnavailable();
-  }
-
-  let response;
-  try {
-    response = await axios.post(
-      url,
-      { jumlah_telur_gram: jumlahTelur, makanan_gram: jumlahMakanan },
-      { timeout: ML_TIMEOUT_MS }
-    );
-  } catch (err) {
-    console.error("ML API error:", err.response?.status ?? err.code, err.message);
-    throw mlUnavailable();
-  }
-
-  const prediction = response.data?.prediction;
-  const business = response.data?.business_metrics;
-
-  const data = {
-    hasilGram: toNumber(prediction?.jumlah_panen_gram),
-    hasilKg: toNumber(prediction?.jumlah_panen_kg),
-    conversionRate: toNumber(prediction?.conversion_rate),
-    conversionLabel: String(prediction?.conversion_label ?? ""),
-    roiEstimate: toNumber(business?.roi_estimate),
-    estimatedValue: parseRupiah(business?.estimated_value),
-    feedCost: parseRupiah(business?.feed_cost),
-  };
-
-  const numericOk = ["hasilGram", "hasilKg", "conversionRate", "roiEstimate"].every((k) =>
-    Number.isFinite(data[k])
-  );
-  if (!prediction || !business || !numericOk) {
-    console.error("Respons ML tidak sesuai format:", JSON.stringify(response.data).slice(0, 500));
-    throw mlUnavailable();
-  }
-
-  return data;
-}
 
 export const tambahFase = async (req, res) => {
   const userId = req.user.id;
@@ -114,7 +51,7 @@ export const tambahFase = async (req, res) => {
 
   // ---------- Fase PANEN ----------
   // Panggil ML dulu; kalau gagal, tidak ada data yang tersimpan.
-  const prediksi = await requestPrediksi(jumlahTelur, jumlahMakanan);
+  const prediksi = await predictPanen(jumlahTelur, jumlahMakanan);
 
   // Fase + prediksi disimpan dalam satu operasi (atomik)
   const { prediksiPanen, ...fase } = await prisma.fase.create({

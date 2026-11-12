@@ -1,5 +1,6 @@
 import app from "./app.js";
 import prisma from "./lib/prisma.js";
+import { getChatbotBaseUrl, getMlBaseUrl } from "./lib/aiClient.js";
 
 // ---------- Cek konfigurasi wajib sebelum server jalan ----------
 const missing = ["DATABASE_URL", "JWT_SECRET"].filter((k) => !process.env[k]);
@@ -10,9 +11,12 @@ if (missing.length) {
 if (process.env.JWT_SECRET.length < 32) {
   console.warn("⚠️  JWT_SECRET terlalu pendek, gunakan minimal 32 karakter acak");
 }
-if (!process.env.ML_API_URL && !process.env.AI_API_URL) {
-  console.warn("⚠️  ML_API_URL belum diisi, fitur prediksi panen tidak akan jalan");
-}
+const mlBase = getMlBaseUrl();
+if (!mlBase) console.warn("⚠️  ML_BASE_URL belum diisi / tidak valid, fitur prediksi AI tidak akan jalan");
+else console.log(`🤖 Layanan prediksi AI: ${mlBase}`);
+const chatbotBase = getChatbotBaseUrl();
+if (!chatbotBase) console.warn("⚠️  CHATBOT_BASE_URL belum diisi, fitur chatbot tidak akan jalan");
+else console.log(`💬 Layanan chatbot AI: ${chatbotBase}`);
 
 const PORT = process.env.PORT || 5001;
 const server = app.listen(PORT, () => {
