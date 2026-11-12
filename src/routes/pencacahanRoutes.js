@@ -27,6 +27,7 @@
  *                 example: "2025-11-14T10:00:00Z"
  *               totalSampah:
  *                 type: number
+ *                 description: Berat sampah dalam kilogram (kg)
  *                 example: 12.5
  *               catatan:
  *                 type: string
@@ -95,6 +96,7 @@
  *             properties:
  *               totalSampah:
  *                 type: number
+ *                 description: Berat sampah dalam kilogram (kg)
  *                 example: 18.3
  *               catatan:
  *                 type: string

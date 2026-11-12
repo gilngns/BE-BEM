@@ -22,7 +22,7 @@ export const createPencacahan = async (req, res) => {
   await createNotifikasi(
     userId,
     "Pencacahan Baru",
-    `Total sampah ${totalSampah} gram berhasil dicatat.`,
+    `Total sampah ${totalSampah} kg berhasil dicatat.`,
     "info"
   );
 
