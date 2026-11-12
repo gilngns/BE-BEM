@@ -111,23 +111,18 @@ export const getTotalPrediksi = async (req, res) => {
 
 // ======================================================
 // GET: Total wadah aktif
-// Wadah dihitung aktif bila fase terakhir siklusnya = PEMBESARAN
-// (tahap pendewasaan maggot). Enum di database tidak punya
-// "PENDEWASAAN", sehingga kode lama selalu menghasilkan 0.
+// Wadah = siklus. Dihitung aktif selama siklus BELUM dipanen, yaitu
+// belum punya fase PANEN dengan tanggal <= sekarang.
+// Fase PANEN bertanggal di masa depan (dikirim aplikasi untuk minta
+// prediksi) tidak membuat wadah dianggap selesai.
 // ======================================================
 export const getWadahAktif = async (req, res) => {
-  const siklus = await prisma.siklus.findMany({
-    where: { userId: req.user.id },
-    select: {
-      fase: {
-        select: { jenis: true },
-        orderBy: [{ tanggal: "desc" }, { id: "desc" }],
-        take: 1,
-      },
+  const wadahAktif = await prisma.siklus.count({
+    where: {
+      userId: req.user.id,
+      fase: { none: { jenis: "PANEN", tanggal: { lte: new Date() } } },
     },
   });
-
-  const wadahAktif = siklus.filter((s) => s.fase[0]?.jenis === "PEMBESARAN").length;
 
   res.json({ success: true, wadahAktif });
 };

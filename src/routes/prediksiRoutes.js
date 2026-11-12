@@ -117,7 +117,10 @@ router.get("/total", getTotalPrediksi);
  * /api/prediksi/wadah-aktif:
  *   get:
  *     summary: Jumlah wadah yang masih aktif
- *     description: Wadah dihitung aktif jika fase terakhir siklusnya = `PEMBESARAN`.
+ *     description: |
+ *       Wadah (= siklus) dihitung aktif selama **belum dipanen**, yaitu belum memiliki fase `PANEN`
+ *       dengan tanggal hari ini atau sebelumnya. Fase PANEN bertanggal di masa depan (misalnya
+ *       dikirim untuk meminta prediksi) tidak membuat wadah dianggap selesai.
  *     tags: [Prediksi (AI)]
  *     security:
  *       - bearerAuth: []
