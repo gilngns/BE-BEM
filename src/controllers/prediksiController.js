@@ -1,173 +1,66 @@
 import prisma from "../lib/prisma.js";
-import { createNotifikasi } from "./notifikasiController.js";
+import { notFound, parseId } from "../lib/validate.js";
 
+// Catatan: endpoint GET di sini sengaja TIDAK membuat notifikasi,
+// karena dipanggil setiap kali halaman dibuka (bikin notifikasi spam).
 
 // ======================================================
 // GET: Semua prediksi panen dari satu siklus
 // ======================================================
 export const getPrediksiBySiklus = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const siklusId = Number(req.params.siklusId);
+  const siklusId = parseId(req.params.siklusId, "siklusId");
 
-    // Pastikan siklus milik user
-    const siklus = await prisma.siklus.findFirst({
-      where: { id: siklusId, userId }
-    });
+  const siklus = await prisma.siklus.findFirst({ where: { id: siklusId, userId: req.user.id } });
+  if (!siklus) throw notFound("Siklus tidak ditemukan");
 
-    if (!siklus) {
-      return res.status(404).json({
-        success: false,
-        message: "Siklus tidak ditemukan"
-      });
-    }
+  const prediksi = await prisma.prediksiPanen.findMany({
+    where: { fase: { siklusId, jenis: "PANEN" } },
+    orderBy: { createdAt: "asc" },
+  });
 
-    // Ambil fase PANEN + prediksi
-    const fasePanen = await prisma.fase.findMany({
-      where: {
-        siklusId,
-        jenis: "PANEN"
-      },
-      include: {
-        prediksiPanen: true
-      }
-    });
-
-    // Filter prediksi yang tidak null
-    const prediksi = fasePanen
-      .map(f => f.prediksiPanen)
-      .filter(p => p !== null);
-
-    // === NOTIFIKASI: Jika prediksi ditemukan ===
-    if (prediksi.length > 0) {
-      await createNotifikasi(
-        userId,
-        "Hasil Prediksi Ditemukan",
-        `Terdapat ${prediksi.length} hasil prediksi panen pada siklus ${siklusId}.`,
-        "info"
-      );
-    }
-
-    return res.json({
-      success: true,
-      data: prediksi
-    });
-
-  } catch (err) {
-    console.error("getPrediksiBySiklus:", err);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
-  }
+  res.json({ success: true, data: prediksi });
 };
-
-
-
 
 // ======================================================
 // GET: Total semua prediksi user (kg & gram)
 // ======================================================
 export const getTotalPrediksi = async (req, res) => {
-  try {
-    const userId = req.user.id;
+  const agg = await prisma.prediksiPanen.aggregate({
+    where: { fase: { siklus: { userId: req.user.id } } },
+    _sum: { hasilKg: true, hasilGram: true },
+    _count: { _all: true },
+  });
 
-    // Ambil semua prediksi terkait user
-    const prediksi = await prisma.prediksiPanen.findMany({
-      where: {
-        fase: {
-          siklus: {
-            userId: userId
-          }
-        }
-      },
-      select: {
-        hasilGram: true,
-        hasilKg: true
-      }
-    });
+  const totalKg = agg._sum.hasilKg ?? 0;
+  const totalGram = agg._sum.hasilGram ?? 0;
 
-    if (prediksi.length === 0) {
-      return res.json({
-        success: true,
-        totalKg: 0,
-        totalGram: 0,
-        jumlahPrediksi: 0
-      });
-    }
-
-    const totalKg = prediksi.reduce((t, p) => t + (p.hasilKg || 0), 0);
-    const totalGram = prediksi.reduce((t, p) => t + (p.hasilGram || 0), 0);
-
-    // === NOTIFIKASI ===
-    await createNotifikasi(
-      userId,
-      "Total Prediksi Diproses",
-      `Total hasil prediksi: ${totalKg.toFixed(2)} kg.`,
-      "info"
-    );
-
-    return res.json({
-      success: true,
-      totalKg: Number(totalKg.toFixed(3)),
-      totalGram: Math.round(totalGram),
-      jumlahPrediksi: prediksi.length
-    });
-
-  } catch (err) {
-    console.error("getTotalPrediksi:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    });
-  }
+  res.json({
+    success: true,
+    totalKg: Number(totalKg.toFixed(3)),
+    totalGram: Math.round(totalGram),
+    jumlahPrediksi: agg._count._all,
+  });
 };
 
-
-
-
 // ======================================================
-// GET: Total wadah aktif (fase terakhir = PENDEWASAAN)
+// GET: Total wadah aktif
+// Wadah dihitung aktif bila fase terakhir siklusnya = PEMBESARAN
+// (tahap pendewasaan maggot). Enum di database tidak punya
+// "PENDEWASAAN", sehingga kode lama selalu menghasilkan 0.
 // ======================================================
 export const getWadahAktif = async (req, res) => {
-  try {
-    const userId = req.user.id;
+  const siklus = await prisma.siklus.findMany({
+    where: { userId: req.user.id },
+    select: {
+      fase: {
+        select: { jenis: true },
+        orderBy: [{ tanggal: "desc" }, { id: "desc" }],
+        take: 1,
+      },
+    },
+  });
 
-    // Ambil semua siklus + fase
-    const siklus = await prisma.siklus.findMany({
-      where: { userId },
-      include: {
-        fase: {
-          orderBy: { tanggal: "asc" }
-        }
-      }
-    });
+  const wadahAktif = siklus.filter((s) => s.fase[0]?.jenis === "PEMBESARAN").length;
 
-    let wadahAktif = 0;
-
-    siklus.forEach(s => {
-      const lastFase = s.fase[s.fase.length - 1]; // fase terakhir
-
-      if (lastFase && lastFase.jenis === "PENDEWASAAN") {
-        wadahAktif++;
-      }
-    });
-
-    // === NOTIFIKASI ===
-    await createNotifikasi(
-      userId,
-      "Wadah Aktif Dihitung",
-      `Saat ini terdapat ${wadahAktif} wadah aktif.`,
-      "info"
-    );
-
-    return res.json({
-      success: true,
-      wadahAktif
-    });
-
-  } catch (err) {
-    console.error("getWadahAktif:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+  res.json({ success: true, wadahAktif });
 };

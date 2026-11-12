@@ -44,16 +44,27 @@ const router = express.Router();
  *                 example: "2025-11-13"
  *               jumlahTelur:
  *                 type: integer
+ *                 description: Gram telur. WAJIB (>= 1) jika jenis = PANEN
  *                 example: 40
  *               jumlahMakanan:
  *                 type: number
+ *                 description: Gram makanan. WAJIB (>= 1) jika jenis = PANEN
  *                 example: 20000
  *               keterangan:
  *                 type: string
  *                 example: "Siap panen"
  *     responses:
  *       200:
- *         description: Fase berhasil ditambahkan
+ *         description: |
+ *           Fase berhasil ditambahkan.
+ *           Jenis PENETASAN/PEMBESARAN -> `data` = object fase.
+ *           Jenis PANEN -> `data` = `{ fase, prediksiPanen }`.
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       503:
+ *         $ref: '#/components/responses/ServiceUnavailable'
  */
 
 /**

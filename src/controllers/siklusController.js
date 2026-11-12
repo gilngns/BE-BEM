@@ -1,74 +1,53 @@
 import prisma from "../lib/prisma.js";
 import { createNotifikasi } from "./notifikasiController.js";
+import { getBody, notFound, parseDate, parseId, parseNumber, parseString } from "../lib/validate.js";
 
 export const createSiklus = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { tanggalMulai, jumlahTelur, mediaTelur, catatan } = req.body;
+  const userId = req.user.id;
+  const body = getBody(req);
 
-    const siklus = await prisma.siklus.create({
-      data: {
-        tanggalMulai: new Date(tanggalMulai),
-        jumlahTelur: Number(jumlahTelur),
-        mediaTelur,
-        catatan: catatan || null,
-        userId
-      }
-    });
+  const tanggalMulai = parseDate(body.tanggalMulai, "tanggalMulai");
+  const jumlahTelur = parseNumber(body.jumlahTelur, "jumlahTelur", { integer: true, min: 1 });
+  const mediaTelur = parseString(body.mediaTelur, "mediaTelur", { maxLength: 100 });
+  const catatan = parseString(body.catatan, "catatan", { optional: true, maxLength: 1000 });
 
-    // === NOTIFIKASI ===
-    await createNotifikasi(
-      userId,
-      "Siklus Baru Dibuat",
-      `Siklus baru dimulai dengan ${jumlahTelur} telur.`,
-      "success"
-    );
+  const siklus = await prisma.siklus.create({
+    data: { tanggalMulai, jumlahTelur, mediaTelur, catatan: catatan ?? null, userId },
+  });
 
-    res.json({ success: true, data: siklus });
-  } catch (err) {
-    console.error("createSiklus:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+  await createNotifikasi(
+    userId,
+    "Siklus Baru Dibuat",
+    `Siklus baru dimulai dengan ${jumlahTelur} telur.`,
+    "success"
+  );
+
+  res.json({ success: true, data: siklus });
 };
 
 export const getAllSiklus = async (req, res) => {
-  try {
-    const userId = req.user.id;
+  const siklus = await prisma.siklus.findMany({
+    where: { userId: req.user.id },
+    orderBy: { createdAt: "desc" },
+  });
 
-    const siklus = await prisma.siklus.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" }
-    });
-
-    res.json({ success: true, data: siklus });
-  } catch (err) {
-    console.error("getAllSiklus:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+  res.json({ success: true, data: siklus });
 };
 
 export const getDetailSiklus = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const id = Number(req.params.id);
+  const id = parseId(req.params.id);
 
-    const siklus = await prisma.siklus.findFirst({
-      where: { id, userId },
-      include: {
-        fase: {
-          orderBy: { tanggal: "asc" },
-          include: { prediksiPanen: true }
-        }
-      }
-    });
+  const siklus = await prisma.siklus.findFirst({
+    where: { id, userId: req.user.id },
+    include: {
+      fase: {
+        orderBy: [{ tanggal: "asc" }, { id: "asc" }],
+        include: { prediksiPanen: true },
+      },
+    },
+  });
 
-    if (!siklus) {
-      return res.status(404).json({ success: false, message: "Siklus tidak ditemukan" });
-    }
+  if (!siklus) throw notFound("Siklus tidak ditemukan");
 
-    res.json({ success: true, data: siklus });
-  } catch (err) {
-    console.error("getDetailSiklus:", err);
-    res.status(500).json({ success: false, message: "Internal server error" });
-  }
+  res.json({ success: true, data: siklus });
 };
