@@ -123,6 +123,13 @@ systemctl restart "$SERVICE"
 step "Menambahkan /api dan /api-docs ke Nginx $DOMAIN"
 cat > "$NGINX_SNIPPET" <<NGINX
 # Backend Maggot BEM (dipasang oleh BE-BEM/deploy/setup-server.sh)
+# Nginx tidak mengompres respons proxy secara bawaan; aktifkan supaya JSON dan
+# file Swagger (1,5 MB -> ±400 KB) lebih ringan di jaringan seluler.
+gzip on;
+gzip_proxied any;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_types application/json application/javascript text/javascript text/css;
 location /api/ {
     proxy_pass http://127.0.0.1:$PORT;
     proxy_http_version 1.1;
