@@ -1,0 +1,2 @@
+# Skrip shell dijalankan di Linux; jangan sampai tersimpan dengan CRLF.
+*.sh text eol=lf
