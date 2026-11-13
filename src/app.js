@@ -46,27 +46,52 @@ app.use(express.json({ limit: "100kb" }));
 app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
 // ---------- Rate limit ----------
+// Saat demo/sosialisasi, puluhan HP warga biasanya memakai wifi yang sama, jadi
+// terlihat dari SATU IP. Batas per IP harus longgar; batas ketat dipasang per akun.
+// Semua angka bisa diubah lewat .env tanpa mengubah kode.
+const envLimit = (name, fallback) => {
+  const n = Number(process.env[name]);
+  return Number.isInteger(n) && n > 0 ? n : fallback;
+};
+const loginUsername = (req) =>
+  typeof req.body?.username === "string" ? req.body.username.trim().toLowerCase() : "";
+
 const limiterOptions = {
   standardHeaders: "draft-7",
   legacyHeaders: false,
   message: { success: false, message: "Terlalu banyak request, coba lagi nanti" },
 };
 
-// Global: 300 request / menit / IP
-app.use("/api", rateLimit({ ...limiterOptions, windowMs: 60 * 1000, limit: 300 }));
+// Global: 3000 request / menit / IP (±50 HP aktif di satu wifi)
+app.use("/api", rateLimit({ ...limiterOptions, windowMs: 60 * 1000, limit: envLimit("RATE_LIMIT_GLOBAL_PER_MIN", 3000) }));
 
-// Login: 10 percobaan GAGAL / 15 menit / IP (login sukses tidak dihitung)
-const loginLimiter = rateLimit({
+// Login per akun: 10 percobaan GAGAL / 15 menit untuk username yang sama dari IP yang sama.
+// Salah ketik satu warga tidak lagi memblokir warga lain di wifi yang sama.
+const loginAccountLimiter = rateLimit({
   ...limiterOptions,
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: envLimit("RATE_LIMIT_LOGIN_FAIL_PER_ACCOUNT", 10),
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => `login:${req.ip}:${loginUsername(req)}`,
+  message: { success: false, message: "Terlalu banyak percobaan login untuk akun ini, coba lagi 15 menit lagi" },
+});
+// Login per IP: rem untuk brute force ke banyak username sekaligus (login sukses tidak dihitung)
+const loginIpLimiter = rateLimit({
+  ...limiterOptions,
+  windowMs: 15 * 60 * 1000,
+  limit: envLimit("RATE_LIMIT_LOGIN_FAIL_PER_IP", 300),
   skipSuccessfulRequests: true,
   message: { success: false, message: "Terlalu banyak percobaan login, coba lagi 15 menit lagi" },
 });
-// Register: 10 akun / jam / IP
-const registerLimiter = rateLimit({ ...limiterOptions, windowMs: 60 * 60 * 1000, limit: 10 });
+// Register: 300 akun / jam / IP (cukup untuk registrasi massal saat demo)
+const registerLimiter = rateLimit({
+  ...limiterOptions,
+  windowMs: 60 * 60 * 1000,
+  limit: envLimit("RATE_LIMIT_REGISTER_PER_HOUR", 300),
+  message: { success: false, message: "Terlalu banyak registrasi dari jaringan ini, coba lagi nanti" },
+});
 
-app.use("/api/auth/login", loginLimiter);
+app.use("/api/auth/login", loginIpLimiter, loginAccountLimiter);
 app.use("/api/auth/register", registerLimiter);
 
 // ---------- Routes ----------
@@ -79,12 +104,13 @@ app.use("/api/pencacahan", authMiddleware, pencacahanRoutes);
 app.use("/api/siklus", authMiddleware, siklusRoutes, faseRoutes);
 app.use("/api/notifikasi", authMiddleware, notifikasiRoutes);
 
-// Chatbot AI: 20 pertanyaan / menit / user (memanggil LLM berbayar)
+// Chatbot AI: 20 pertanyaan / menit / sesi login (memanggil LLM berbayar).
+// Per sesi (bukan per user) supaya beberapa orang yang memakai akun bersama tidak berbagi kuota.
 const chatbotLimiter = rateLimit({
   ...limiterOptions,
   windowMs: 60 * 1000,
-  limit: 20,
-  keyGenerator: (req) => `user:${req.user.id}`,
+  limit: envLimit("RATE_LIMIT_CHATBOT_PER_MIN", 20),
+  keyGenerator: (req) => `session:${req.sessionId}`,
   message: { success: false, message: "Terlalu banyak pertanyaan, tunggu sebentar lalu coba lagi" },
 });
 app.use("/api/chatbot", authMiddleware, chatbotLimiter, chatbotRoutes);
