@@ -54,6 +54,8 @@ export const authMiddleware = async (req, res, next) => {
 
   req.user = { id: decoded.id, username: decoded.username, rw: decoded.rw };
   req.token = token;
+  // jti unik per login; token lama (sebelum ada jti) memakai token itu sendiri sebagai id sesi
+  req.sessionId = typeof decoded.jti === "string" ? decoded.jti : token;
   next();
 };
 

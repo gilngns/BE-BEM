@@ -11,6 +11,12 @@ if (missing.length) {
 if (process.env.JWT_SECRET.length < 32) {
   console.warn("⚠️  JWT_SECRET terlalu pendek, gunakan minimal 32 karakter acak");
 }
+if (!process.env.TRUST_PROXY) {
+  console.warn(
+    "⚠️  TRUST_PROXY belum diisi. Jika server di belakang nginx/cloudflare, semua pengguna akan " +
+      "terlihat dari 1 IP dan berbagi kuota rate limit. Isi TRUST_PROXY=1 (lihat .env.example)."
+  );
+}
 const mlBase = getMlBaseUrl();
 if (!mlBase) console.warn("⚠️  ML_BASE_URL belum diisi / tidak valid, fitur prediksi AI tidak akan jalan");
 else console.log(`🤖 Layanan prediksi AI: ${mlBase}`);
