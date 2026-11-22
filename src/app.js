@@ -11,6 +11,7 @@ import siklusRoutes from "./routes/siklusRoutes.js";
 import faseRoutes from "./routes/faseRoutes.js";
 import notifikasiRoutes from "./routes/notifikasiRoutes.js";
 import chatbotRoutes from "./routes/chatbotRoutes.js";
+import monitoringRoutes from "./routes/monitoringRoutes.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { HttpError } from "./lib/validate.js";
 
@@ -99,6 +100,8 @@ app.get("/", (req, res) => res.json({ success: true, message: "Maggot BEM API" }
 app.get("/health", (req, res) => res.json({ success: true, status: "ok" }));
 
 app.use("/api/auth", authRoutes);
+// Untuk web admin kelurahan (antar-server, kunci X-Monitoring-Key, bukan JWT warga)
+app.use("/api/monitoring", monitoringRoutes);
 app.use("/api/prediksi", authMiddleware, prediksiRoutes);
 app.use("/api/pencacahan", authMiddleware, pencacahanRoutes);
 app.use("/api/siklus", authMiddleware, siklusRoutes, faseRoutes);
