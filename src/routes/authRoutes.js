@@ -36,7 +36,7 @@ const router = express.Router();
  *                 example: "123456"
  *               rw:
  *                 type: string
- *                 enum: [RW4, RW5]
+ *                 enum: [RW1, RW2, RW3, RW4, RW5]
  *                 example: RW4
  *     responses:
  *       200:

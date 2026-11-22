@@ -23,7 +23,7 @@
  *         schema: { type: string, example: "2026-11-30" }
  *       - in: query
  *         name: rw
- *         schema: { type: string, enum: [RW4, RW5] }
+ *         schema: { type: string, enum: [RW1, RW2, RW3, RW4, RW5] }
  *     responses:
  *       200:
  *         description: Berhasil

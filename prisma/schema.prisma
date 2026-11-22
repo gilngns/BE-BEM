@@ -15,6 +15,9 @@ datasource db {
 // ENUMS
 // =============================
 enum RW {
+  RW1
+  RW2
+  RW3
   RW4
   RW5
 }

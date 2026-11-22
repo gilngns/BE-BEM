@@ -5,7 +5,7 @@ import prisma from "../lib/prisma.js";
 import { JWT_ALGORITHM, JWT_EXPIRES_IN, JWT_EXPIRES_MS } from "../middleware/auth.js";
 import { badRequest, getBody, HttpError, parseEnum } from "../lib/validate.js";
 
-const RW_LIST = ["RW4", "RW5"];
+const RW_LIST = ["RW1", "RW2", "RW3", "RW4", "RW5"];
 const SALT_ROUNDS = 10;
 const USERNAME_REGEX = /^[a-zA-Z0-9._-]{3,30}$/;
 

@@ -92,6 +92,13 @@ describe("demo: banyak warga dari satu wifi", () => {
     assert.equal(res.body.user.username, "warga41");
   });
 
+  test("warga RW 1 sampai RW 3 bisa registrasi, RW di luar itu ditolak", async () => {
+    for (const rw of ["RW1", "RW2", "RW3"]) {
+      assert.equal((await post("/api/auth/register", { username: `ketua${rw.toLowerCase()}`, password: "rahasia123", rw })).status, 200);
+    }
+    assert.equal((await post("/api/auth/register", { username: "ketuarw6", password: "rahasia123", rw: "RW6" })).status, 400);
+  });
+
   test("registrasi 'Warga1' ditolak karena 'warga1' sudah ada", async () => {
     const res = await post("/api/auth/register", { username: "Warga1", password: "rahasia123", rw: "RW5" });
     assert.equal(res.status, 400);

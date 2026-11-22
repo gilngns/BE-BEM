@@ -72,5 +72,6 @@ describe("monitoring sampah masuk", () => {
     assert.equal((await get("dari=2026-11-30&sampai=2026-11-01")).status, 400);
     assert.equal((await get("dari=2025-01-01&sampai=2026-11-30")).status, 400);
     assert.equal((await get("dari=2026-11-01&sampai=2026-11-30&rw=RW9")).status, 400);
+    assert.equal((await get("dari=2026-11-01&sampai=2026-11-30&rw=RW1")).status, 200, "RW1 sampai RW5 diterima");
   });
 });

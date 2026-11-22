@@ -6,7 +6,7 @@ import { badRequest, HttpError, parseEnum } from "../lib/validate.js";
 // Dipanggil antar-server (server web admin -> backend), bukan dari browser atau Android,
 // jadi dilindungi kunci rahasia MONITORING_API_KEY, bukan JWT akun warga.
 
-const RW_LIST = ["RW4", "RW5"];
+const RW_LIST = ["RW1", "RW2", "RW3", "RW4", "RW5"];
 const MAKS_HARI = 366;
 const WIB = "+07:00";
 
