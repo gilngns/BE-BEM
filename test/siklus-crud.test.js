@@ -14,8 +14,8 @@ let db;
 const reset = () => {
   db = {
     siklus: [
-      { id: 1, userId: 1, tanggalMulai: new Date("2026-11-01"), jumlahTelur: 40, mediaTelur: "Dedak", catatan: null },
-      { id: 2, userId: 2, tanggalMulai: new Date("2026-11-01"), jumlahTelur: 10, mediaTelur: "Dedak", catatan: null },
+      { id: 1, kode: "Ab3dE6gH9jK2mN5p", userId: 1, tanggalMulai: new Date("2026-11-01"), jumlahTelur: 40, mediaTelur: "Dedak", catatan: null },
+      { id: 2, kode: "Zz9_yX8-wV7uT6sR", userId: 2, tanggalMulai: new Date("2026-11-01"), jumlahTelur: 10, mediaTelur: "Dedak", catatan: null },
     ],
     fase: [
       { id: 10, siklusId: 1, jenis: "PENETASAN", tanggal: new Date("2026-11-01"), jumlahTelur: 40, jumlahMakanan: null, keterangan: null },
@@ -46,6 +46,7 @@ const fakePrisma = {
       const s = db.siklus.find((x) => cocok(x, where)) ?? null;
       return include?.fase ? denganFase(s) : s;
     },
+    findMany: async ({ where }) => db.siklus.filter((x) => cocok(x, where)),
     update: async ({ where, data }) => Object.assign(db.siklus.find((x) => x.id === where.id), isi(data)),
     delete: async ({ where }) => { db.siklus = db.siklus.filter((x) => x.id !== where.id); return {}; },
   },
@@ -212,5 +213,39 @@ describe("PUT/DELETE /api/siklus/:siklusId/fase/:faseId", () => {
     assert.equal((await kirim("PUT", "/api/siklus/2/fase/20", { keterangan: "x" })).status, 404);
     assert.equal((await kirim("DELETE", "/api/siklus/1/fase/20")).status, 404);
     assert.ok(fase(20));
+  });
+});
+
+describe("akses lewat kode acak (URL aplikasi web)", () => {
+  const ambil = async (path) => {
+    const res = await fetch(base + path, { headers: { Authorization: `Bearer ${token}` } });
+    return { status: res.status, body: await res.json().catch(() => null) };
+  };
+
+  test("GET/PUT siklus dan PUT fase memakai kode", async () => {
+    const r = await ambil("/api/siklus/Ab3dE6gH9jK2mN5p");
+    assert.equal(r.status, 200);
+    assert.equal(r.body.data.id, 1);
+    assert.equal((await kirim("PUT", "/api/siklus/Ab3dE6gH9jK2mN5p", { catatan: "lewat kode" })).status, 200);
+    assert.equal(db.siklus[0].catatan, "lewat kode");
+    assert.equal((await kirim("PUT", "/api/siklus/Ab3dE6gH9jK2mN5p/fase/11", { keterangan: "k" })).status, 200);
+    assert.equal(fase(11).keterangan, "k");
+  });
+
+  test("ID angka tetap jalan (aplikasi Android)", async () => {
+    assert.equal((await ambil("/api/siklus/1")).status, 200);
+  });
+
+  test("kode milik akun lain -> 404, kode tidak valid -> 400", async () => {
+    assert.equal((await ambil("/api/siklus/Zz9_yX8-wV7uT6sR")).status, 404);
+    assert.equal((await kirim("DELETE", "/api/siklus/Zz9_yX8-wV7uT6sR")).status, 404);
+    assert.equal(db.siklus.length, 2);
+    assert.equal((await ambil("/api/siklus/bukan-kode")).status, 400);
+    assert.equal((await ambil("/api/siklus/1%20OR%201=1")).status, 400);
+  });
+
+  test("hapus siklus lewat kode", async () => {
+    assert.equal((await kirim("DELETE", "/api/siklus/Ab3dE6gH9jK2mN5p")).status, 200);
+    assert.equal(db.siklus.some((x) => x.id === 1), false);
   });
 });

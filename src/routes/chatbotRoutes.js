@@ -36,7 +36,10 @@ const router = express.Router();
  *                 example: Berapa suhu ideal untuk penetasan telur maggot?
  *     responses:
  *       200:
- *         description: Jawaban chatbot
+ *         description: >
+ *           Jawaban chatbot. `asal`: materi (dari PDF), internet (materi tidak memuat jawaban sehingga
+ *           dicari di internet, sumbernya di `sumberWeb`), di_luar_topik (bukan soal maggot / sampah
+ *           organik, ditolak), sapaan, atau tidak_ditemukan.
  *         content:
  *           application/json:
  *             example:
@@ -45,6 +48,8 @@ const router = express.Router();
  *                 jawaban: Suhu ideal penetasan telur BSF adalah 27-30°C dengan kelembaban 70-80%...
  *                 sumber:
  *                   - { dokumen: 2._Bahan_Ajar_Budidaya_Maggot_Black_Soldier_Fly_BSF.pdf, cuplikan: "Telur BSF menetas dalam 3-4 hari pada suhu 27-30°C...", kemiripan: 0.82 }
+ *                 asal: materi
+ *                 sumberWeb: []
  *       400:
  *         $ref: '#/components/responses/BadRequest'
  *       429:

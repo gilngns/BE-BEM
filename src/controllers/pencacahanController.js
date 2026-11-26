@@ -1,6 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { createNotifikasi } from "./notifikasiController.js";
-import { badRequest, getBody, notFound, parseDate, parseId, parseNumber, parseString } from "../lib/validate.js";
+import { badRequest, getBody, notFound, parseDate, parseNumber, parseRef, parseString } from "../lib/validate.js";
 
 // Semua query dibatasi ke data milik user yang login (userId dari token).
 
@@ -41,9 +41,9 @@ export const getAllPencacahan = async (req, res) => {
 
 // GET BY ID
 export const getPencacahanById = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
-  const data = await prisma.pencacahan.findFirst({ where: { id, userId: req.user.id } });
+  const data = await prisma.pencacahan.findFirst({ where: { ...ref, userId: req.user.id } });
   if (!data) throw notFound();
 
   res.json({ success: true, status: "success", data });
@@ -51,7 +51,7 @@ export const getPencacahanById = async (req, res) => {
 
 // UPDATE (hanya field yang dikirim yang diubah)
 export const updatePencacahan = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
   const body = getBody(req);
 
   const tanggalWaktu = parseDate(body.tanggalWaktu, "tanggalWaktu", { optional: true, nullable: false });
@@ -62,11 +62,11 @@ export const updatePencacahan = async (req, res) => {
     throw badRequest("Tidak ada data yang diubah");
   }
 
-  const existing = await prisma.pencacahan.findFirst({ where: { id, userId: req.user.id } });
+  const existing = await prisma.pencacahan.findFirst({ where: { ...ref, userId: req.user.id } });
   if (!existing) throw notFound();
 
   const data = await prisma.pencacahan.update({
-    where: { id },
+    where: { id: existing.id },
     data: { tanggalWaktu, totalSampah, catatan },
   });
 
@@ -75,9 +75,9 @@ export const updatePencacahan = async (req, res) => {
 
 // DELETE
 export const deletePencacahan = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
-  const result = await prisma.pencacahan.deleteMany({ where: { id, userId: req.user.id } });
+  const result = await prisma.pencacahan.deleteMany({ where: { ...ref, userId: req.user.id } });
   if (result.count === 0) throw notFound();
 
   res.json({ success: true, status: "success", message: "Data berhasil dihapus" });

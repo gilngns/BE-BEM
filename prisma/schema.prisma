@@ -48,6 +48,8 @@ model User {
 // =============================
 model Siklus {
   id           Int       @id @default(autoincrement())
+  // Kode acak untuk URL aplikasi (ID angka tidak ditampilkan ke pengguna)
+  kode         String    @unique @default(nanoid(16))
   tanggalMulai DateTime
   jumlahTelur  Float
   mediaTelur   String
@@ -116,6 +118,8 @@ model TokenBlacklist {
 
 model pencacahan {
   id           Int      @id @default(autoincrement())
+  // Kode acak untuk URL aplikasi (ID angka tidak ditampilkan ke pengguna)
+  kode         String    @unique @default(nanoid(16))
   tanggalWaktu DateTime
   totalSampah  Float
   catatan      String?
@@ -130,6 +134,8 @@ model pencacahan {
 // ================================
 model Notifikasi {
   id        Int      @id @default(autoincrement())
+  // Kode acak untuk URL aplikasi (ID angka tidak ditampilkan ke pengguna)
+  kode         String    @unique @default(nanoid(16))
   userId    Int
   title     String
   message   String

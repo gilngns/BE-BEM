@@ -3,14 +3,14 @@ import { predictPanen } from "../lib/aiClient.js";
 import { siapkanPanenUlang } from "../lib/panenUlang.js";
 import { createNotifikasi } from "./notifikasiController.js";
 import {
-  badRequest, getBody, notFound, parseDate, parseEnum, parseId, parseNumber, parseString,
+  badRequest, getBody, notFound, parseDate, parseEnum, parseId, parseNumber, parseRef, parseString,
 } from "../lib/validate.js";
 
 export const JENIS_FASE = ["PENETASAN", "PEMBESARAN", "PANEN"];
 
 export const tambahFase = async (req, res) => {
   const userId = req.user.id;
-  const siklusId = parseId(req.params.siklusId, "siklusId");
+  const siklusRef = parseRef(req.params.siklusId, "siklusId");
   const body = getBody(req);
 
   const jenis = parseEnum(body.jenis, "jenis", JENIS_FASE);
@@ -24,8 +24,9 @@ export const tambahFase = async (req, res) => {
   });
   const keterangan = parseString(body.keterangan, "keterangan", { optional: true, maxLength: 1000 });
 
-  const siklus = await prisma.siklus.findFirst({ where: { id: siklusId, userId } });
+  const siklus = await prisma.siklus.findFirst({ where: { ...siklusRef, userId } });
   if (!siklus) throw notFound("Siklus tidak ditemukan");
+  const siklusId = siklus.id;
 
   const faseData = {
     jenis,
@@ -71,10 +72,11 @@ export const tambahFase = async (req, res) => {
 };
 
 export const getFase = async (req, res) => {
-  const siklusId = parseId(req.params.siklusId, "siklusId");
-
-  const siklus = await prisma.siklus.findFirst({ where: { id: siklusId, userId: req.user.id } });
+  const siklus = await prisma.siklus.findFirst({
+    where: { ...parseRef(req.params.siklusId, "siklusId"), userId: req.user.id },
+  });
   if (!siklus) throw notFound("Siklus tidak ditemukan");
+  const siklusId = siklus.id;
 
   const fase = await prisma.fase.findMany({
     where: { siklusId },
@@ -87,10 +89,10 @@ export const getFase = async (req, res) => {
 
 /** Siklus milik user beserta fase-fasenya, dan fase yang diminta. */
 async function cariFaseMilikUser(req) {
-  const siklusId = parseId(req.params.siklusId, "siklusId");
+  const siklusRef = parseRef(req.params.siklusId, "siklusId");
   const faseId = parseId(req.params.faseId, "faseId");
   const siklus = await prisma.siklus.findFirst({
-    where: { id: siklusId, userId: req.user.id },
+    where: { ...siklusRef, userId: req.user.id },
     include: { fase: { include: { prediksiPanen: true } } },
   });
   if (!siklus) throw notFound("Siklus tidak ditemukan");

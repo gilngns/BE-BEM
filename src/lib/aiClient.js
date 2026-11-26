@@ -216,7 +216,15 @@ function normalizeChatbotResponse(body) {
         kemiripan: typeof s?.similarity === "number" ? Number(s.similarity.toFixed(3)) : null,
       }))
     : [];
-  return { jawaban: answer, sumber: sources };
+  // Sumber internet (bila materi PDF tidak memuat jawaban). Hanya URL http(s) yang diteruskan.
+  const sumberWeb = Array.isArray(body.web_sources)
+    ? body.web_sources
+        .filter((w) => typeof w?.url === "string" && /^https?:\/\//i.test(w.url))
+        .slice(0, 5)
+        .map((w) => ({ judul: typeof w.title === "string" ? w.title.slice(0, 200) : "", url: w.url.slice(0, 500) }))
+    : [];
+  const asal = typeof body.sumber_jawaban === "string" ? body.sumber_jawaban : null;
+  return { jawaban: answer, sumber: sources, asal, sumberWeb };
 }
 
 export async function chatbotTanya(pertanyaan) {

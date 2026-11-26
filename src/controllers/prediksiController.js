@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { getModelInfo, predictPenetasan } from "../lib/aiClient.js";
 import {
-  badRequest, getBody, notFound, parseId, parseNumber, parseString,
+  badRequest, getBody, notFound, parseNumber, parseRef, parseString,
 } from "../lib/validate.js";
 
 // ======================================================
@@ -22,8 +22,7 @@ export const prediksiPenetasan = async (req, res) => {
 
   let siklus = null;
   if (body.siklusId !== undefined && body.siklusId !== null && body.siklusId !== "") {
-    const siklusId = parseId(String(body.siklusId), "siklusId");
-    siklus = await prisma.siklus.findFirst({ where: { id: siklusId, userId: req.user.id } });
+    siklus = await prisma.siklus.findFirst({ where: { ...parseRef(String(body.siklusId), "siklusId"), userId: req.user.id } });
     if (!siklus) throw notFound("Siklus tidak ditemukan");
   }
 
@@ -75,13 +74,13 @@ export const prediksiPenetasan = async (req, res) => {
 // GET: Semua prediksi panen dari satu siklus
 // ======================================================
 export const getPrediksiBySiklus = async (req, res) => {
-  const siklusId = parseId(req.params.siklusId, "siklusId");
-
-  const siklus = await prisma.siklus.findFirst({ where: { id: siklusId, userId: req.user.id } });
+  const siklus = await prisma.siklus.findFirst({
+    where: { ...parseRef(req.params.siklusId, "siklusId"), userId: req.user.id },
+  });
   if (!siklus) throw notFound("Siklus tidak ditemukan");
 
   const prediksi = await prisma.prediksiPanen.findMany({
-    where: { fase: { siklusId, jenis: "PANEN" } },
+    where: { fase: { siklusId: siklus.id, jenis: "PANEN" } },
     orderBy: { createdAt: "asc" },
   });
 

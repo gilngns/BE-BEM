@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { siapkanPanenUlang } from "../lib/panenUlang.js";
 import { createNotifikasi } from "./notifikasiController.js";
-import { badRequest, getBody, notFound, parseDate, parseId, parseNumber, parseString } from "../lib/validate.js";
+import { badRequest, getBody, notFound, parseDate, parseNumber, parseRef, parseString } from "../lib/validate.js";
 
 export const createSiklus = async (req, res) => {
   const userId = req.user.id;
@@ -36,10 +36,10 @@ export const getAllSiklus = async (req, res) => {
 };
 
 export const getDetailSiklus = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
   const siklus = await prisma.siklus.findFirst({
-    where: { id, userId: req.user.id },
+    where: { ...ref, userId: req.user.id },
     include: {
       fase: {
         orderBy: [{ tanggal: "asc" }, { id: "asc" }],
@@ -56,7 +56,7 @@ export const getDetailSiklus = async (req, res) => {
 // UPDATE (hanya field yang dikirim yang diubah)
 export const updateSiklus = async (req, res) => {
   const userId = req.user.id;
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
   const body = getBody(req);
 
   const tanggalMulai = parseDate(body.tanggalMulai, "tanggalMulai", { optional: true, nullable: false });
@@ -69,10 +69,11 @@ export const updateSiklus = async (req, res) => {
   }
 
   const siklus = await prisma.siklus.findFirst({
-    where: { id, userId },
+    where: { ...ref, userId },
     include: { fase: { include: { prediksiPanen: true } } },
   });
   if (!siklus) throw notFound("Siklus tidak ditemukan");
+  const { id } = siklus;
 
   // Berat telur berubah: perkiraan panen dihitung ulang dulu (AI dipanggil sebelum ada yang
   // disimpan), lalu fase PENETASAN & PANEN ikut disesuaikan dalam satu transaksi.
@@ -93,10 +94,11 @@ export const updateSiklus = async (req, res) => {
 // DELETE: siklus beserta semua fase dan perkiraannya
 export const deleteSiklus = async (req, res) => {
   const userId = req.user.id;
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
-  const siklus = await prisma.siklus.findFirst({ where: { id, userId } });
+  const siklus = await prisma.siklus.findFirst({ where: { ...ref, userId } });
   if (!siklus) throw notFound("Siklus tidak ditemukan");
+  const { id } = siklus;
 
   await prisma.$transaction([
     prisma.prediksiPanen.deleteMany({ where: { fase: { siklusId: id } } }),

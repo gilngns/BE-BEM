@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import { notFound, parseId } from "../lib/validate.js";
+import { notFound, parseRef } from "../lib/validate.js";
 
 // Dipakai controller lain. Error tidak dilempar supaya kegagalan
 // notifikasi tidak menggagalkan proses utama.
@@ -24,10 +24,10 @@ export const getNotifikasi = async (req, res) => {
 
 // PATCH tandai sudah dibaca
 export const readNotifikasi = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
   const result = await prisma.notifikasi.updateMany({
-    where: { id, userId: req.user.id },
+    where: { ...ref, userId: req.user.id },
     data: { isRead: true },
   });
   if (result.count === 0) throw notFound("Notifikasi tidak ditemukan");
@@ -37,9 +37,9 @@ export const readNotifikasi = async (req, res) => {
 
 // DELETE notif
 export const deleteNotifikasi = async (req, res) => {
-  const id = parseId(req.params.id);
+  const ref = parseRef(req.params.id);
 
-  const result = await prisma.notifikasi.deleteMany({ where: { id, userId: req.user.id } });
+  const result = await prisma.notifikasi.deleteMany({ where: { ...ref, userId: req.user.id } });
   if (result.count === 0) throw notFound("Notifikasi tidak ditemukan");
 
   res.json({ success: true, message: "Notifikasi dihapus" });

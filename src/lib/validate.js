@@ -51,6 +51,17 @@ export function parseId(value, name = "id") {
   return n;
 }
 
+const KODE_REGEX = /^[A-Za-z0-9_-]{16}$/;
+
+/**
+ * Rujukan data dari parameter URL: kode acak (dipakai aplikasi web) atau ID angka
+ * (dipakai aplikasi Android). Hasilnya dipakai langsung di `where` Prisma.
+ */
+export function parseRef(value, name = "id") {
+  if (typeof value === "string" && KODE_REGEX.test(value) && !/^\d+$/.test(value)) return { kode: value };
+  return { id: parseId(value, name) };
+}
+
 export function parseDate(value, name, opts = {}) {
   const empty = handleEmpty(value, name, opts);
   if (empty.done) return empty.value;
