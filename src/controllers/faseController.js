@@ -1,8 +1,9 @@
 import prisma from "../lib/prisma.js";
 import { predictPanen } from "../lib/aiClient.js";
+import { siapkanPanenUlang } from "../lib/panenUlang.js";
 import { createNotifikasi } from "./notifikasiController.js";
 import {
-  getBody, notFound, parseDate, parseEnum, parseId, parseNumber, parseString,
+  badRequest, getBody, notFound, parseDate, parseEnum, parseId, parseNumber, parseString,
 } from "../lib/validate.js";
 
 export const JENIS_FASE = ["PENETASAN", "PEMBESARAN", "PANEN"];
@@ -82,4 +83,64 @@ export const getFase = async (req, res) => {
   });
 
   res.json({ success: true, data: fase });
+};
+
+/** Siklus milik user beserta fase-fasenya, dan fase yang diminta. */
+async function cariFaseMilikUser(req) {
+  const siklusId = parseId(req.params.siklusId, "siklusId");
+  const faseId = parseId(req.params.faseId, "faseId");
+  const siklus = await prisma.siklus.findFirst({
+    where: { id: siklusId, userId: req.user.id },
+    include: { fase: { include: { prediksiPanen: true } } },
+  });
+  if (!siklus) throw notFound("Siklus tidak ditemukan");
+  const fase = siklus.fase.find((f) => f.id === faseId);
+  if (!fase) throw notFound("Fase tidak ditemukan");
+  return { siklus, fase };
+}
+
+/**
+ * Fase PANEN dibuat aplikasi bersamaan dengan fase PEMBESARAN (tanggal & pakan sama) untuk
+ * meminta perkiraan. Jadi fase PANEN ikut berubah / terhapus bersama fase PEMBESARAN-nya.
+ */
+const panenTerkait = (siklus, fase) =>
+  fase.jenis === "PEMBESARAN" ? siklus.fase.filter((f) => f.jenis === "PANEN") : fase.jenis === "PANEN" ? [fase] : [];
+
+// UPDATE fase (hanya field yang dikirim yang diubah)
+export const updateFase = async (req, res) => {
+  const body = getBody(req);
+  const tanggal = parseDate(body.tanggal, "tanggal", { optional: true, nullable: false });
+  const jumlahMakanan = parseNumber(body.jumlahMakanan, "jumlahMakanan", { optional: true, nullable: false, min: 1 });
+  const keterangan = parseString(body.keterangan, "keterangan", { optional: true, maxLength: 1000 });
+
+  if ([tanggal, jumlahMakanan, keterangan].every((v) => v === undefined)) {
+    throw badRequest("Tidak ada data yang diubah");
+  }
+
+  const { siklus, fase } = await cariFaseMilikUser(req);
+  const panen = panenTerkait(siklus, fase);
+  const pakanBerubah = jumlahMakanan !== undefined && jumlahMakanan !== fase.jumlahMakanan;
+  // Pakan berubah: perkiraan dihitung ulang dulu (AI dipanggil sebelum ada yang disimpan).
+  const opsPanen = pakanBerubah
+    ? await siapkanPanenUlang(panen, { jumlahMakanan, tanggal, keterangan }, siklus.jumlahTelur)
+    : panen.map((p) => prisma.fase.update({ where: { id: p.id }, data: { tanggal, keterangan } }));
+
+  const ops = [
+    ...(fase.jenis !== "PANEN" ? [prisma.fase.update({ where: { id: fase.id }, data: { tanggal, jumlahMakanan, keterangan } })] : []),
+    ...opsPanen,
+  ];
+  const [data] = await prisma.$transaction(ops);
+  res.json({ success: true, message: "Fase berhasil diperbarui", data });
+};
+
+// DELETE fase (fase PEMBESARAN ikut menghapus fase PANEN & perkiraannya)
+export const deleteFase = async (req, res) => {
+  const { siklus, fase } = await cariFaseMilikUser(req);
+  const ids = [fase.id, ...panenTerkait(siklus, fase).map((f) => f.id)].filter((v, i, a) => a.indexOf(v) === i);
+
+  await prisma.$transaction([
+    prisma.prediksiPanen.deleteMany({ where: { faseId: { in: ids } } }),
+    prisma.fase.deleteMany({ where: { id: { in: ids } } }),
+  ]);
+  res.json({ success: true, message: "Fase berhasil dihapus" });
 };

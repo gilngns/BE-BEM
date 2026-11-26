@@ -1,5 +1,5 @@
 import express from "express";
-import { tambahFase, getFase } from "../controllers/faseController.js";
+import { deleteFase, getFase, tambahFase, updateFase } from "../controllers/faseController.js";
 
 const router = express.Router();
 
@@ -147,7 +147,77 @@ const router = express.Router();
  *         $ref: '#/components/responses/NotFound'
  */
 
+/**
+ * @swagger
+ * /api/siklus/{siklusId}/fase/{faseId}:
+ *   put:
+ *     summary: Mengubah fase (hanya field yang dikirim)
+ *     description: >
+ *       Fase PANEN dibuat aplikasi bersamaan dengan fase PEMBESARAN. Saat fase PEMBESARAN diubah,
+ *       fase PANEN ikut disesuaikan; bila `jumlahMakanan` berubah, perkiraan panen dihitung ulang
+ *       (503 bila layanan AI gagal, tanpa ada data yang berubah).
+ *     tags: [Fase]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: siklusId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - name: faseId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tanggal:
+ *                 type: string
+ *                 example: "2025-11-26"
+ *               jumlahMakanan:
+ *                 type: number
+ *                 description: Gram pakan (>= 1)
+ *                 example: 12500
+ *               keterangan:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Fase diperbarui
+ *       404:
+ *         description: Siklus / fase tidak ditemukan
+ *   delete:
+ *     summary: Menghapus fase (fase PEMBESARAN ikut menghapus fase PANEN & perkiraannya)
+ *     tags: [Fase]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: siklusId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - name: faseId
+ *         in: path
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Fase dihapus
+ *       404:
+ *         description: Siklus / fase tidak ditemukan
+ */
+
 router.post("/:siklusId/fase", tambahFase);
 router.get("/:siklusId/fase", getFase);
+router.put("/:siklusId/fase/:faseId", updateFase);
+router.delete("/:siklusId/fase/:faseId", deleteFase);
 
 export default router;
