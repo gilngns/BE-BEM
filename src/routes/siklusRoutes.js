@@ -35,7 +35,8 @@ const router = express.Router();
  *                 type: string
  *                 example: "2025-11-13"
  *               jumlahTelur:
- *                 type: integer
+ *                 type: number
+ *                 description: Gram telur, boleh desimal (> 0), misal 0.5
  *                 example: 40
  *               mediaTelur:
  *                 type: string

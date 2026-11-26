@@ -7,7 +7,7 @@ export const createSiklus = async (req, res) => {
   const body = getBody(req);
 
   const tanggalMulai = parseDate(body.tanggalMulai, "tanggalMulai");
-  const jumlahTelur = parseNumber(body.jumlahTelur, "jumlahTelur", { integer: true, min: 1 });
+  const jumlahTelur = parseNumber(body.jumlahTelur, "jumlahTelur", { min: 0.01, max: 1e6 });
   const mediaTelur = parseString(body.mediaTelur, "mediaTelur", { maxLength: 100 });
   const catatan = parseString(body.catatan, "catatan", { optional: true, maxLength: 1000 });
 
@@ -18,7 +18,7 @@ export const createSiklus = async (req, res) => {
   await createNotifikasi(
     userId,
     "Siklus Baru Dibuat",
-    `Siklus baru dimulai dengan ${jumlahTelur} telur.`,
+    `Siklus baru dimulai dengan ${String(jumlahTelur).replace(".", ",")} gram telur.`,
     "success"
   );
 

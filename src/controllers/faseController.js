@@ -16,7 +16,7 @@ export const tambahFase = async (req, res) => {
   const tanggal = parseDate(body.tanggal, "tanggal");
   const isPanen = jenis === "PANEN";
   const jumlahTelur = parseNumber(body.jumlahTelur, "jumlahTelur", {
-    integer: true, optional: !isPanen, min: isPanen ? 1 : 0,
+    optional: !isPanen, min: isPanen ? 0.01 : 0, max: 1e6,
   });
   const jumlahMakanan = parseNumber(body.jumlahMakanan, "jumlahMakanan", {
     optional: !isPanen, min: isPanen ? 1 : 0,

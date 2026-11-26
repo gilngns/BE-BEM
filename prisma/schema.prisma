@@ -49,7 +49,7 @@ model User {
 model Siklus {
   id           Int       @id @default(autoincrement())
   tanggalMulai DateTime
-  jumlahTelur  Int
+  jumlahTelur  Float
   mediaTelur   String
   catatan      String?
   createdAt    DateTime  @default(now())
@@ -72,7 +72,7 @@ model Fase {
   tanggal       DateTime
 
   // Field opsional, tergantung jenis fase
-  jumlahTelur   Int?
+  jumlahTelur   Float?
   jumlahMakanan Float?
   keterangan    String?
 

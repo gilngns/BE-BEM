@@ -47,8 +47,8 @@ const router = express.Router();
  *                 type: string
  *                 example: "2025-11-13"
  *               jumlahTelur:
- *                 type: integer
- *                 description: Gram telur. WAJIB (>= 1) jika jenis = PANEN
+ *                 type: number
+ *                 description: Gram telur, boleh desimal. WAJIB (> 0) jika jenis = PANEN
  *                 example: 40
  *               jumlahMakanan:
  *                 type: number
